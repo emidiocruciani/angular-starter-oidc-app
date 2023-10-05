@@ -1,0 +1,33 @@
+ul {
+    list-style-type: none;
+    margin: 0px;
+    padding: 0px;
+    background-color: var(--bs-gray-800);
+}
+
+li {
+    display: inline-block;
+}
+
+li:hover {
+    background-color: var(--bs-gray-900);
+}
+
+li a {
+    display: block;
+    color: var(--bs-white);
+    text-decoration: none;
+    padding: 1rem 1rem;
+}
+
+.float-right {
+    float: right;
+}
+
+.login-button-container {
+    background-color: var(--bs-primary);
+}
+
+.login-button-container:hover {
+    background-color: var(--bs-secondary);
+}

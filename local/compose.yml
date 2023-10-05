@@ -1,0 +1,118 @@
+# ----------------------------------------------------------------------------------------------------------------------
+# DISCLAIMER
+# this compose.yml is meant to be used in development environments only
+# ensure all password/secret variables in this file are not used in production
+# ----------------------------------------------------------------------------------------------------------------------
+version: '3.9'
+
+networks:
+  app-dev:
+    driver: bridge
+
+volumes:
+  auth-db-vol:
+    driver: local
+
+services:
+  auth-db:
+    container_name: auth_db
+    environment:
+      - 'POSTGRES_DB=auth'
+      - 'POSTGRES_USER=root'
+      - 'POSTGRES_PASSWORD=root'
+      - 'PGPASSWORD=root'
+    healthcheck:
+      test: [ 'CMD', 'pg_isready', '-q', '-d', 'auth', '-U', 'root' ]
+      retries: 5
+      timeout: 5s
+      start_period: 1s
+    image: postgres:latest
+    networks:
+      app-dev:
+        aliases:
+          - authdb.domain.localhost
+    volumes:
+      - 'auth-db-vol:/var/lib/postgresql/data'
+
+  auth:
+    container_name: auth_server
+    environment:
+      - 'DEBUG=1'
+      - 'SECRET_KEY=django-not-so-secret-key-1K'
+      - 'ALLOWED_HOSTS=localhost 127.0.0.1 [::1] auth.domain.localhost'
+      - 'CORS_ALLOWED_ORIGINS=http://localhost http://127.0.0.1'
+      - 'CORS_ALLOW_HEADERS=accept authorization cache-control content-type user-agent x-csrftoken x-requested-with'
+      - 'DB_ENGINE=django.db.backends.postgresql'
+      - 'DB_HOST=authdb.domain.localhost'
+      - 'DB_PORT=5432'
+      - 'DB_NAME=auth'
+      - 'DB_USER=root'
+      - 'DB_PASSWORD=root'
+      - 'EMAIL_HOST=smtp.domain.localhost'
+      - 'EMAIL_HOST_PASSWORD='
+      - 'EMAIL_HOST_USER='
+      - 'EMAIL_PORT=1025'
+      - 'EMAIL_USE_TLS=0'
+      - 'DEFAULT_FROM_EMAIL=smtp@domain.localhost'
+    image: auth-server:local-portable
+    ports:
+      - '127.0.0.1:8081:80'
+    networks:
+      app-dev:
+        aliases:
+          - auth.domain.localhost
+
+  resource:
+    container_name: resource_server
+    environment:
+      - 'JAVA_DEBUG=1'
+      - 'CORS_ALLOWED_ORIGINS=http://localhost http://127.0.0.1'
+      - 'CORS_ALLOWED_HEADERS=accept authorization cache-control content-type'
+      - 'OAUTH2_INTROSPECTION_URL=http://auth.domain.localhost/oauth2/introspect/'
+      - 'OAUTH2_INTROSPECTION_TOKEN=fa49l5qCiHcaczVvXx9SQQE2jOQdKv'
+    image: resource-server:local
+    networks:
+      app-dev:
+        aliases:
+          - resource.domain.localhost
+    ports:
+      - '127.0.0.1:8080:80'
+      - '127.0.0.1:5005:5005'
+
+  app-ui:
+    build:
+      context: ../
+      target: local
+    command: ng serve --configuration development --host 0.0.0.0 --port 4200
+    container_name: app_ui
+    image: app-ui:local
+    networks:
+      app-dev:
+        aliases:
+          - app.domain.localhost
+    ports:
+      - '127.0.0.1:80:4200'
+    volumes:
+      - '..:/app'
+
+  smtp:
+    container_name: mailhog_smtp
+    image: mailhog/mailhog:latest
+    ports:
+      - '127.0.0.1:9000:8025'
+    networks:
+      app-dev:
+        aliases:
+          - smtp.domain.localhost
+
+  devtools-adminer:
+    container_name: tools_adminer
+    environment:
+      - ADMINER_DESIGN=mvt
+    image: adminer:latest
+    networks:
+      app-dev:
+        aliases:
+          - tools-adminer.domain.localhost
+    ports:
+      - '127.0.0.1:9001:8080'

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+display_separator() {
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+}
+
+display_separator
+echo 'Installing node packages..'
+npm install
+
+display_separator
+echo 'Building docker images..'
+docker compose -f ./local/compose.yml build
+
+display_separator
+echo 'Starting docker services..'
+docker compose -f ./local/compose.yml up -d
+
+display_separator
+echo 'Initializing auth server database...'
+docker compose -f ./local/compose.yml exec -u "$(id -u):$(id -g)" auth sh /var/app/scripts/init-db

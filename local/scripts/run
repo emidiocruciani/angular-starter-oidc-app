@@ -1,0 +1,13 @@
+#!/bin/sh
+
+display_separator() {
+    printf '%*s\n' "${COLUMNS:-$(tput cols)}" '' | tr ' ' -
+}
+
+display_separator
+echo 'Shutting down running docker services..'
+docker compose -f ./local/compose.yml down --remove-orphans
+
+display_separator
+echo 'Starting docker services..'
+docker compose -f ./local/compose.yml up -d
